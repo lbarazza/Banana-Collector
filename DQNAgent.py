@@ -6,13 +6,14 @@ import torch.nn.functional as F
 from models.QNet import QNet
 
 class Agent:
-    def __init__(self, nS, nA, gamma, epsilon_start, epsilon_end, epsilon_decay_frames, target_qnet_update_rate, replay_buffer_length, batch_size):
+    def __init__(self, nS, nA, learning_rate, gamma, epsilon_start, epsilon_end, epsilon_decay_frames, target_qnet_update_rate, replay_buffer_length, batch_size, replay_start_size):
 
         #initialize env info
         self.nS = nS
         self.nA = nA
 
         #initialize hyperparamters
+        self.learning_rate = learning_rate
         self.gamma = gamma
         self.epsilon = epsilon_start
         self.epsilon_end = epsilon_end
@@ -20,14 +21,15 @@ class Agent:
         self.target_qnet_update_rate = target_qnet_update_rate
         self.REPLAY_BUFFER_LENGTH = replay_buffer_length
         self.BATCH_SIZE = batch_size
+        self.replay_start_size = replay_start_size
 
-        #keep track of number of steps so that you can update target_qnet every target_qnet_update_rate
+        #keep track of number of n_qnet_updates so that you can update target_qnet every target_qnet_update_rate
         self.steps = 0
 
         #initialize Deep Q Network and target network
         self.qnet = QNet(self.nS, self.nA)
         self.target_qnet = self.qnet
-        self.optimizer = torch.optim.Adam(self.qnet.parameters(), lr=0.001)
+        self.optimizer = torch.optim.Adam(self.qnet.parameters(), lr=learning_rate)
 
         #initialize replay buffer for experiences replay
         self.replay_buffer = deque(maxlen=self.REPLAY_BUFFER_LENGTH)
@@ -35,7 +37,8 @@ class Agent:
     # choose action based on epsilon-greedy policy if greedy=False, otherwise follow greedy policy
     def choose_action(self, state, greedy=False):
         if (random.random() > self.epsilon) or greedy:
-            action = torch.argmax(self.qnet(Agent.preprocess_state(state)), dim=1).item()
+            with torch.no_grad():
+                action = torch.argmax(self.qnet(Agent.preprocess_state(state)), dim=1).item()
         else:
             action = np.random.randint(self.nA)
         return action
@@ -48,15 +51,20 @@ class Agent:
         self.replay_buffer.append((state, action, reward, new_state, done))
 
         #do experience replay if there are enough experiences
-        if len(self.replay_buffer) == self.REPLAY_BUFFER_LENGTH:
+        if len(self.replay_buffer) >= self.replay_start_size:
+            #print("Do experience replay")
             self.experience_replay()
 
         #check whether to update target_qnet
         if self.steps % self.target_qnet_update_rate == 0:
             #update target_qnet parameters with qnet parameters
-            self.target_qnet = self.qnet
+            #self.target_qnet = self.qnet
+            #print("Updating Target...")
+            for target_qnet_param, qnet_param in zip(self.target_qnet.parameters(), self.qnet.parameters()):
+                target_qnet_param.data.copy_(qnet_param.data)
 
         self.steps += 1
+
         # decrease epsilon
         self.epsilon = max(self.epsilon_end, self.epsilon-self.epsilon_decay_rate)
 
@@ -66,8 +74,10 @@ class Agent:
         #experiences_batch = np.random.choice(range(0, self.replay_buffer_length), self.BATCH_SIZE)
         #list(self.replay_buffer)
         experiences_batch = random.sample(list(self.replay_buffer), self.BATCH_SIZE)
+        #print("\n\n", experiences_batch)
         states, actions, rewards, new_states, dones = Agent.preprocess_experiences(experiences_batch)
         self.learn(states, actions, rewards, new_states, dones)
+        #print(states, actions, rewards, new_states, dones)
 
     # turn state into a tensor, add batch dimension to feed it into the model and cast it to a
     # FloatTensor as that is the default type for weights and biases in the nn Module (better than
@@ -81,7 +91,7 @@ class Agent:
     def preprocess_experiences(experiences):
         states = torch.tensor(np.vstack([i[0] for i in experiences])).float()
         # we are going to use the actions variable as index to the gather function in learn(),
-        # by default PyTorch uses the Long datatype to refer to indeces to allow inexing of very large
+        # by default PyTorch uses the Long datatype to refer to indeces to allow indexing of very large
         # datasets (the int datatype would only allow for elements up to 4GB)
         actions = torch.tensor(np.vstack([i[1] for i in experiences])).long()
         rewards = torch.tensor(np.vstack([i[2] for i in experiences])).float()
@@ -91,8 +101,10 @@ class Agent:
 
     # train the agent over a batch of experiences
     def learn(self, states, actions, rewards, new_states, dones):
-        self.optimizer.zero_grad()
-        td_targets = rewards + self.gamma*(torch.argmax(self.target_qnet(new_states), dim=1, keepdim=True)).float() * (1-dones)
+        #print("Learning...")
+        self.optimizer.zero_grad() #shouldn't it be max instead of argmax?
+        with torch.no_grad():
+            td_targets = rewards + self.gamma*(torch.max(self.target_qnet(new_states), dim=1, keepdim=True)[0]).float() * (1-dones) #
         y = torch.gather(self.qnet(states), dim=1, index=actions)
         loss = F.mse_loss(y, td_targets)
         loss.backward()
