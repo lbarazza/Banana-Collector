@@ -42,10 +42,8 @@ class Agent:
         else:
             action = np.random.randint(self.nA)
         return action
-        #p = 1-self.epsilon if not greedy else 1
-        #return np.random.choice([action, np.random.randint(self.nA)], p=[p, 1-p])
 
-    #
+    # make the agent
     def step(self, state, action, reward, new_state, done):
         #update replay_buffer with new experiences
         self.replay_buffer.append((state, action, reward, new_state, done))
@@ -58,8 +56,6 @@ class Agent:
         #check whether to update target_qnet
         if self.steps % self.target_qnet_update_rate == 0:
             #update target_qnet parameters with qnet parameters
-            #self.target_qnet = self.qnet
-            #print("Updating Target...")
             for target_qnet_param, qnet_param in zip(self.target_qnet.parameters(), self.qnet.parameters()):
                 target_qnet_param.data.copy_(qnet_param.data)
 
@@ -71,13 +67,9 @@ class Agent:
 
     # do one step of experience replay
     def experience_replay(self):
-        #experiences_batch = np.random.choice(range(0, self.replay_buffer_length), self.BATCH_SIZE)
-        #list(self.replay_buffer)
         experiences_batch = random.sample(list(self.replay_buffer), self.BATCH_SIZE)
-        #print("\n\n", experiences_batch)
         states, actions, rewards, new_states, dones = Agent.preprocess_experiences(experiences_batch)
         self.learn(states, actions, rewards, new_states, dones)
-        #print(states, actions, rewards, new_states, dones)
 
     # turn state into a tensor, add batch dimension to feed it into the model and cast it to a
     # FloatTensor as that is the default type for weights and biases in the nn Module (better than
@@ -109,3 +101,31 @@ class Agent:
         loss = F.mse_loss(y, td_targets)
         loss.backward()
         self.optimizer.step()
+
+    # save a checkpoint of the agent
+    def save_checkpoint(self, epoch, checkpoint_path):
+        torch.save({
+                    'epoch': epoch,
+                    'epsilon': self.epsilon,
+                    'qnet_state_dict': self.qnet.state_dict(),
+                    'target_qnet_state_dict': self.target_qnet.state_dict(),
+                    'optimizer_state_dict': self.optimizer.state_dict(),
+        }, checkpoint_path)
+
+    # load a checkpoint of the agent
+    def load_checkpoint(self, checkpoint_path, mode):
+        checkpoint = torch.load(checkpoint_path)
+        self.epsilon = checkpoint['epsilon']
+        self.qnet.load_state_dict(checkpoint['qnet_state_dict'])
+        self.target_qnet.load_state_dict(checkpoint['target_qnet_state_dict'])
+        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        # set agent into either training or evaluation mode
+        if mode == 'train':
+            self.qnet.train()
+            self.target_qnet.train()
+        elif mode == 'eval':
+            self.qnet.eval()
+            self.target_qnet.eval()
+
+        # return number of epochs elapsed so far
+        return checkpoint['epoch']
