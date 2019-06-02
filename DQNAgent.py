@@ -1,18 +1,19 @@
 from collections import deque
 import random
 import numpy as np
+#from scipy.ndimage.interpolation import shift
 import torch
 import torch.nn.functional as F
 from models.QNet import QNet
 
 class Agent:
-    def __init__(self, nS, nA, learning_rate, gamma, epsilon_start, epsilon_end, epsilon_decay_frames, target_qnet_update_rate, replay_buffer_length, batch_size, replay_start_size):
+    def __init__(self, nS, nA, learning_rate, gamma, epsilon_start, epsilon_end, epsilon_decay_frames, target_qnet_update_rate, replay_buffer_length, batch_size, replay_start_size, alpha, e):
 
-        #initialize env info
+        # initialize env info
         self.nS = nS
         self.nA = nA
 
-        #initialize hyperparamters
+        # initialize hyperparamters
         self.learning_rate = learning_rate
         self.gamma = gamma
         self.epsilon = epsilon_start
@@ -22,31 +23,61 @@ class Agent:
         self.REPLAY_BUFFER_LENGTH = replay_buffer_length
         self.BATCH_SIZE = batch_size
         self.replay_start_size = replay_start_size
+        # prioritized experience replay hyperparamters
+        self.alpha = alpha
+        self.e = e
 
-        #keep track of number of n_qnet_updates so that you can update target_qnet every target_qnet_update_rate
+        # keep track of number of n_qnet_updates so that we can update target_qnet every target_qnet_update_rate
         self.steps = 0
 
-        #initialize Deep Q Network and target network
+        # initialize Deep Q Network and target network
         self.qnet = QNet(self.nS, self.nA)
         self.target_qnet = self.qnet
         self.optimizer = torch.optim.Adam(self.qnet.parameters(), lr=learning_rate)
 
-        #initialize replay buffer for experiences replay
+        # initialize replay buffer for experiences replay
         self.replay_buffer = deque(maxlen=self.REPLAY_BUFFER_LENGTH)
+        self.td_errors = np.zeros(self.REPLAY_BUFFER_LENGTH)
 
     # choose action based on epsilon-greedy policy if greedy=False, otherwise follow greedy policy
     def choose_action(self, state, greedy=False):
         if (random.random() > self.epsilon) or greedy:
             with torch.no_grad():
-                action = torch.argmax(self.qnet(Agent.preprocess_state(state)), dim=1).item()
+                action = torch.argmax(self.qnet(Agent.preprocess(state)), dim=1).item()
         else:
             action = np.random.randint(self.nA)
         return action
 
+    def compute_td_errors(self, states, actions, rewards, new_states, dones):
+        with torch.no_grad():
+            td_targets = rewards + self.gamma*(torch.gather(self.target_qnet(new_states), index=torch.argmax(self.qnet(new_states), dim=1, keepdim=True), dim=1)) * (1-dones)
+            #print(self.qnet(states), actions)
+            y = torch.gather(self.qnet(states), dim=1, index=actions)
+            td_errors = torch.abs(td_targets - y)
+        return td_errors
+
     # make the agent
     def step(self, state, action, reward, new_state, done):
+
         #update replay_buffer with new experiences
         self.replay_buffer.append((state, action, reward, new_state, done))
+        #update td_errors with new td_error
+
+        state = Agent.preprocess(state)
+        action = Agent.preprocess([action]).long()
+        reward = Agent.preprocess([reward])
+        new_state = Agent.preprocess(new_state)
+        done = Agent.preprocess([done])
+        td_error = self.compute_td_errors(state, action, reward, new_state, done).item()
+        #self.td_errors.append(td_error)
+
+        buf_len = len(self.replay_buffer)
+        if buf_len >= self.REPLAY_BUFFER_LENGTH:
+            self.td_errors = np.roll(self.td_errors, -1)
+            self.td_errors[-1] = td_error
+        else:
+            self.td_errors[buf_len] = td_error
+
 
         #do experience replay if there are enough experiences
         if len(self.replay_buffer) >= self.replay_start_size:
@@ -59,23 +90,51 @@ class Agent:
             for target_qnet_param, qnet_param in zip(self.target_qnet.parameters(), self.qnet.parameters()):
                 target_qnet_param.data.copy_(qnet_param.data)
 
-        self.steps += 1
+            ## introduce soft updating <--
 
-        # decrease epsilon
+        #increase steps by 1 and decrease epsilon
+        self.steps += 1
         self.epsilon = max(self.epsilon_end, self.epsilon-self.epsilon_decay_rate)
+
+    def probs(self, z):
+        #m = np.max(z)
+        #z = z**self.a
+        #for i in range(len(z)):
+        #    z[i] = z[i]
+        z = z**self.alpha+self.e
+        return z/np.sum(z)#**self)#*self.a))
 
 
     # do one step of experience replay
     def experience_replay(self):
-        experiences_batch = random.sample(list(self.replay_buffer), self.BATCH_SIZE)
+        #experiences_batch = random.sample(list(self.replay_buffer), self.BATCH_SIZE)
+
+        # i would always need to convert to tensor...
+        #p = F.softmax(self.a * torch.tensor(self.td_errors)).numpy() # <----
+        #print(p)
+        p = self.probs(self.td_errors[:len(self.replay_buffer)])
+        #print(np.sum(p))
+        experiences_batch_indexes = np.random.choice(len(self.replay_buffer), p=p, size=self.BATCH_SIZE) #p=p
+        # use 'fancy' indexing, that is indexing of lists by using lists
+        #experiences_batch = np.array(self.replay_buffer)[experiences_batch_indexes]
+
+        # or to not continously convert entire replay buffer into np.array... (does it run faster?)
+        experiences_batch = []
+        for index in experiences_batch_indexes:
+            experiences_batch.append(self.replay_buffer[index])
+
+
         states, actions, rewards, new_states, dones = Agent.preprocess_experiences(experiences_batch)
         self.learn(states, actions, rewards, new_states, dones)
+
+        new_td_errors = self.compute_td_errors(states, actions, rewards, new_states, dones)
+        self.td_errors[experiences_batch_indexes] = new_td_errors.reshape(1, -1).squeeze()
 
     # turn state into a tensor, add batch dimension to feed it into the model and cast it to a
     # FloatTensor as that is the default type for weights and biases in the nn Module (better than
     # casting entire model to double as double operations are slow on GPUs)
     @staticmethod
-    def preprocess_state(state):
+    def preprocess(state):
         return torch.unsqueeze(torch.tensor(state).float(), 0)
 
     # extract all states, actions, rewards and new states from tuple and return a separate tensor for each
@@ -93,10 +152,14 @@ class Agent:
 
     # train the agent over a batch of experiences
     def learn(self, states, actions, rewards, new_states, dones):
-        #print("Learning...")
-        self.optimizer.zero_grad() #shouldn't it be max instead of argmax?
+        self.optimizer.zero_grad()
         with torch.no_grad():
-            td_targets = rewards + self.gamma*(torch.max(self.target_qnet(new_states), dim=1, keepdim=True)[0]).float() * (1-dones) #
+            # Nature DQN targets
+            #td_targets = rewards + self.gamma*(torch.max(self.target_qnet(new_states), dim=1, keepdim=True)[0]).float() * (1-dones)
+
+            # Double DQN targets
+            td_targets = rewards + self.gamma*(torch.gather(self.target_qnet(new_states), index=torch.argmax(self.qnet(new_states), dim=1, keepdim=True), dim=1)) * (1-dones)
+
         y = torch.gather(self.qnet(states), dim=1, index=actions)
         loss = F.mse_loss(y, td_targets)
         loss.backward()
@@ -110,7 +173,8 @@ class Agent:
                     'qnet_state_dict': self.qnet.state_dict(),
                     'target_qnet_state_dict': self.target_qnet.state_dict(),
                     'optimizer_state_dict': self.optimizer.state_dict(),
-        }, checkpoint_path)
+        }, checkpoint_path) # replay buffer becomes too big to store
+
 
     # load a checkpoint of the agent
     def load_checkpoint(self, checkpoint_path, mode):
