@@ -8,4 +8,4 @@ The action space of the environment has four actions (corresponding to going for
 This project is implemented using Python 3.6, PyTorch, NumPy and the UnityEnvironment package.
 
 ## Run the Code
-To run the code in this repository download clone the repository and run the main.py file.
+To run the code in this repository download/clone the repository and run the main.py file.
