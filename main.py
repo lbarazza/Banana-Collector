@@ -24,7 +24,7 @@ agent = Agent(nS=nS,
               epsilon_start=1.0,
               epsilon_end=0.1,
               # making epsilon decay in 4000000 frames will make epsilon get to 0.1 in around 800 episodes
-              epsilon_decay_frames=1r00000,
+              epsilon_decay_frames=100000,
               epsilon_decay_rate=0.99,
               target_qnet_update_rate=5,#1000,#4
               tau=0.001,
