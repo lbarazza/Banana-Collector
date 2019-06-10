@@ -7,7 +7,7 @@ from models.QNet import QNet
 from DQNAgent import Agent
 
 # create environment
-env = UnityEnvironment(file_name="Banana.app") #seed = n
+env = UnityEnvironment(file_name="Banana.app", seed=42) #seed = n
 # create brain
 brain_name = env.brain_names[0]
 brain = env.brains[brain_name]
@@ -24,11 +24,11 @@ agent = Agent(nS=nS,
               epsilon_start=1.0,
               epsilon_end=0.1,
               # making epsilon decay in 4000000 frames will make epsilon get to 0.1 in around 800 episodes
-              epsilon_decay_frames=200000,
+              epsilon_decay_frames=1r00000,
               epsilon_decay_rate=0.99,
-              target_qnet_update_rate=5,#1000,
+              target_qnet_update_rate=5,#1000,#4
               tau=0.001,
-              replay_buffer_length=50000,#50000,
+              replay_buffer_length=500000,#50000,
               batch_size=256,
               replay_start_size=1000,
               alpha=0,
@@ -36,18 +36,25 @@ agent = Agent(nS=nS,
 
 
 start_epoch = 0
-NUM_EPOCHS = 3000
+MAX_EPOCHS = 3000
 
-checkpoint_path = "weights/NatureQNet18.tar"
+checkpoint_path = "weights/NatureQNet22.tar"
 
 # load checkpoint if available
 checkpoint_file = Path(checkpoint_path)
 if checkpoint_file.is_file():
     start_epoch = agent.load_checkpoint(checkpoint_path, mode='train')
 
+plt.xlabel("n. Episodes")
+plt.ylabel("Score")
+
 rets = []
 avg_rets = []
-for epoch in range(start_epoch, NUM_EPOCHS):
+epoch = start_epoch
+solved = False
+while not solved or (epoch == MAX_EPOCHS):
+    epoch+=1
+
     env_info = env.reset(train_mode=True)[brain_name] # train_mode=False makes the env run at 'normal speed'
     state = env_info.vector_observations[0]
 
@@ -69,16 +76,17 @@ for epoch in range(start_epoch, NUM_EPOCHS):
             else:
                 avg_ret = np.mean(rets)
             if avg_ret >= 13:
+                solved = True
                 print("----> SOLVED <----")
             print("Epoch n. {:5d}\tTotal Reward: {:2.0f}\tAverage Ret.: {:6.2f}\tEpsilon: {:5.2f}\tn. steps: {:9d}".format(epoch, ret, avg_ret, agent.epsilon, agent.steps))
             break
 
-    if epoch%50==0:
+    if (epoch%50==0) or solved:
         # save checkpoint
         agent.save_checkpoint(epoch, checkpoint_path)
         # plot agent's progress over time
-        plt.plot(range(epoch-start_epoch+1), rets, color='cyan')
-        plt.plot(range(100, epoch-start_epoch+1), avg_rets, color='blue')
+        plt.plot(range(1, epoch-start_epoch+1), rets, color='dodgerblue')#cyan
+        plt.plot(range(101, epoch-start_epoch+1), avg_rets, color='blue')
         plt.axhline(y=13, color='red')
         plt.pause(0.01)
 
