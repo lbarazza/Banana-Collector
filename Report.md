@@ -11,6 +11,7 @@ The deep Q-Network used is a 2-hidden layer network with each hidden layer havin
 
 ## Hyperparamters
 An informal search over the hyperparaters has been conducted with the following results:
+
   epsilon start        = 1.0
   epsilon end   = 0.1
   epsilon decay frames = 100 000
@@ -18,3 +19,17 @@ An informal search over the hyperparaters has been conducted with the following 
   learning rate = 0.0005
   target Q-network update rate
   
+
+|     w    |      f        |
+|-------------------------------|:-------------------------------:|
+|    epsilon start              |          1.0                    |
+|                               |                                 |
+|          |          |
+|          |          |
+
+
+
+
+
+
+
