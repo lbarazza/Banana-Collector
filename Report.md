@@ -18,14 +18,20 @@ An informal search over the hyperparaters has been conducted with the following 
   gamma = 0.99
   learning rate = 0.0005
   target Q-network update rate
-  
 
-|     w    |      f        |
+|     Hyperparamter             |      Value                      |
 |-------------------------------|:-------------------------------:|
 |    epsilon start              |          1.0                    |
-|                               |                                 |
-|          |          |
-|          |          |
+|    epsilon end                |          0.1                    |
+|    epsilon decay frames       |          100 000                |
+|    gamma                      |          0.99                   |
+|    target net update rate     |          5                      |
+|    tau                        |          0.001                  |
+|    replay buffer length       |          500 000                |
+|    batch size                 |          256                    |
+|    replay buffer start size   |          1000                   |
+
+
 
 
 
