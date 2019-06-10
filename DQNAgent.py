@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from models.QNet import QNet
 
 class Agent:
-    def __init__(self, nS, nA, learning_rate, gamma, epsilon_start, epsilon_end, epsilon_decay_frames, target_qnet_update_rate, replay_buffer_length, batch_size, replay_start_size, alpha, e):
+    def __init__(self, nS, nA, learning_rate, gamma, epsilon_start, epsilon_end, epsilon_decay_frames, epsilon_decay_rate, target_qnet_update_rate, tau, replay_buffer_length, batch_size, replay_start_size, alpha, e):
 
         # initialize env info
         self.nS = nS
@@ -19,7 +19,9 @@ class Agent:
         self.epsilon = epsilon_start
         self.epsilon_end = epsilon_end
         self.epsilon_decay_rate = (epsilon_start - epsilon_end)/epsilon_decay_frames
+        #self.epsilon_decay_rate = epsilon_decay_rate
         self.target_qnet_update_rate = target_qnet_update_rate
+        self.tau = tau
         self.REPLAY_BUFFER_LENGTH = replay_buffer_length
         self.BATCH_SIZE = batch_size
         self.replay_start_size = replay_start_size
@@ -43,7 +45,16 @@ class Agent:
     def choose_action(self, state, greedy=False):
         if (random.random() > self.epsilon) or greedy:
             with torch.no_grad():
+                # you can't do batch normalization if batch size is one so turn off batchnorm when choosing action
+                for m in self.qnet.modules():
+                    if isinstance(m, torch.nn.BatchNorm1d):
+                        m.eval()
+
                 action = torch.argmax(self.qnet(Agent.preprocess(state)), dim=1).item()
+                # turn batchnorm back on
+                for m in self.qnet.modules():
+                    if isinstance(m, torch.nn.BatchNorm1d):
+                        m.train()
         else:
             action = np.random.randint(self.nA)
         return action
@@ -62,7 +73,7 @@ class Agent:
         #update replay_buffer with new experiences
         self.replay_buffer.append((state, action, reward, new_state, done))
         #update td_errors with new td_error
-
+        '''
         state = Agent.preprocess(state)
         action = Agent.preprocess([action]).long()
         reward = Agent.preprocess([reward])
@@ -77,8 +88,8 @@ class Agent:
             self.td_errors[-1] = td_error
         else:
             self.td_errors[buf_len] = td_error
-
-
+        #https://www.freecodecamp.org/news/improvements-in-deep-q-learning-dueling-double-dqn-prioritized-experience-replay-and-fixed-58b130cc5682/
+        '''
         #do experience replay if there are enough experiences
         if len(self.replay_buffer) >= self.replay_start_size:
             #print("Do experience replay")
@@ -87,48 +98,56 @@ class Agent:
         #check whether to update target_qnet
         if self.steps % self.target_qnet_update_rate == 0:
             #update target_qnet parameters with qnet parameters
+            '''
             for target_qnet_param, qnet_param in zip(self.target_qnet.parameters(), self.qnet.parameters()):
                 target_qnet_param.data.copy_(qnet_param.data)
-
-            ## introduce soft updating <--
+            '''
+            ## --> introduce soft updating <-- ##
+            for target_qnet_param, qnet_param in zip(self.target_qnet.parameters(), self.qnet.parameters()):
+                target_qnet_param.data.copy_((1-self.tau)*target_qnet_param.data + self.tau*qnet_param.data)
 
         #increase steps by 1 and decrease epsilon
         self.steps += 1
         self.epsilon = max(self.epsilon_end, self.epsilon-self.epsilon_decay_rate)
+        # --> test exponential epsilon decay <-- #
+        #self.epsilon = max(self.epsilon_end, self.epsilon*self.epsilon_decay_rate)
+
 
     def probs(self, z):
         #m = np.max(z)
         #z = z**self.a
         #for i in range(len(z)):
         #    z[i] = z[i]
-        z = z**self.alpha+self.e
+        z = (z+self.e)**self.alpha
         return z/np.sum(z)#**self)#*self.a))
 
 
     # do one step of experience replay
     def experience_replay(self):
-        #experiences_batch = random.sample(list(self.replay_buffer), self.BATCH_SIZE)
+        experiences_batch = random.sample(list(self.replay_buffer), self.BATCH_SIZE)
 
-        # i would always need to convert to tensor...
-        #p = F.softmax(self.a * torch.tensor(self.td_errors)).numpy() # <----
-        #print(p)
-        p = self.probs(self.td_errors[:len(self.replay_buffer)])
-        #print(np.sum(p))
-        experiences_batch_indexes = np.random.choice(len(self.replay_buffer), p=p, size=self.BATCH_SIZE) #p=p
+        #p = self.probs(self.td_errors[:len(self.replay_buffer)])
+
+        # ---> experiences_batch_indexes = np.random.choice(len(self.replay_buffer), p=p, size=self.BATCH_SIZE) #p=p
+
         # use 'fancy' indexing, that is indexing of lists by using lists
         #experiences_batch = np.array(self.replay_buffer)[experiences_batch_indexes]
 
+        '''
         # or to not continously convert entire replay buffer into np.array... (does it run faster?)
         experiences_batch = []
         for index in experiences_batch_indexes:
             experiences_batch.append(self.replay_buffer[index])
-
+        '''
 
         states, actions, rewards, new_states, dones = Agent.preprocess_experiences(experiences_batch)
         self.learn(states, actions, rewards, new_states, dones)
 
+
+        '''
         new_td_errors = self.compute_td_errors(states, actions, rewards, new_states, dones)
         self.td_errors[experiences_batch_indexes] = new_td_errors.reshape(1, -1).squeeze()
+        '''
 
     # turn state into a tensor, add batch dimension to feed it into the model and cast it to a
     # FloatTensor as that is the default type for weights and biases in the nn Module (better than
@@ -162,6 +181,9 @@ class Agent:
 
         y = torch.gather(self.qnet(states), dim=1, index=actions)
         loss = F.mse_loss(y, td_targets)
+
+        ## ---> use huber loss <---- ##
+
         loss.backward()
         self.optimizer.step()
 
