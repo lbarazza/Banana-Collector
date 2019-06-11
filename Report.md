@@ -17,19 +17,18 @@ An informal search over the hyperparaters has been conducted with the following 
 |-------------------------------|:-------------------------------:|
 |    epsilon_start              |          1.0                    |
 |    epsilon_end                |          0.1                    |
-|    epsilon_decay_frames *     |          100 000                |
+|    epsilon_decay_frames *     |          100,000                |
 |    gamma                      |          0.99                   |
 |    target_net_update_rate     |          5                      |
 |    tau                        |          0.001                  |
-|    replay_buffer_length       |          500 000                |
+|    replay_buffer_length       |          500,000                |
 |    batch_size                 |          256                    |
 |    replay_start_size          |          1000                   |
-* epsilon is reduced linearly from epsilon start to epsilon end in epsilon_decay_frames amount of frames
+* epsilon is reduced linearly from epsilon_start to epsilon_end in epsilon_decay_frames amount of frames
 
 ## Results
-With the previously proposed hyperparameters I managed to solve the environment in a best of 1467 episodes.
+Using Double DQN with the previously proposed hyperparameters I managed to solve the environment in a best of 1467 episodes.
 ![alt text](https://raw.githubusercontent.com/lbarazza/Banana-Collector/master/images/DDQN_e100k_batchnorm.png "DDQN_e100k_batchnorm")
-
 
 ## Further Improvements
 To further improve the algorithm some modifications can be made such as prioritized experience replay with importance sampling and a dueling network architecture. Other improvements could be Noisy DQN,  Distributional DQN and multi-step bootstrap targets (components of the Rainbow algorithm).
