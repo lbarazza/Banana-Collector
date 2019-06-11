@@ -13,16 +13,25 @@ Download the repository with
 git clone https://github.com/lbarazza/Banana-Collector
 ```
 
-then
-
-To install the environment, choose the version corresponding to your operating system:
+To install the environment, download the version corresponding to your operating system
 
 [Linux](https://s3-us-west-1.amazonaws.com/udacity-drlnd/P1/Banana/Banana_Linux.zip)
+
 [Mac OSX](https://s3-us-west-1.amazonaws.com/udacity-drlnd/P1/Banana/Banana.app.zip)
+
 [Windows (32-bit)](https://s3-us-west-1.amazonaws.com/udacity-drlnd/P1/Banana/Banana_Windows_x86.zip)
+
 [Windows (64-bit)](https://s3-us-west-1.amazonaws.com/udacity-drlnd/P1/Banana/Banana_Windows_x86_64.zip)
 
-and then download all of the other requirements,
+and place the unzipped file in the root of the project folder.
+
+Create a virtual environment to contain the all of the dependencies,
+
+```
+conda create --name test4 python=3.6 matplotlib
+```
+
+then install all the dependencies
 
 ```
 pip install -r requirements.txt
