@@ -1,5 +1,5 @@
 # Banana-Collector
-[alt image](https://raw.githubusercontent.com/lbarazza/Banana-Collector/master/images/Banana-Collector_env_image.png "Banana-Collector_env_image")
+![alt text](https://raw.githubusercontent.com/lbarazza/Banana-Collector/master/images/Banana-Collector_env_image.png "Banana-Collector_env_image")
 
 ## Project Details
 This project solves the environment provided in the Udacity Reinforcement Learning Nanodegree Program. The system consists of an agent that has to collect as many yellow bananas as possible while avoiding blue bananas. More specifically, a reward of +1 is associated with every yellow banana the agent runs into, while a reward of -1 is given for any collision with a blue banana. The environment is considered solved when the avervage reward over the last 100 episodes reaches 13.
