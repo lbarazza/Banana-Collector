@@ -23,19 +23,30 @@ To install the environment, download the version corresponding to your operating
 
 [Windows (64-bit)](https://s3-us-west-1.amazonaws.com/udacity-drlnd/P1/Banana/Banana_Windows_x86_64.zip)
 
-and place the unzipped file in the root of the project folder.
-
-Create a virtual environment to contain the all of the dependencies,
+and place the unzipped file in the root of the project folder. Then, move into the project directory and create a virtual environment to contain all of the dependencies.
 
 ```
-conda create --name test4 python=3.6 matplotlib
+cd Banana-Collector
+conda create --name banana-project python=3.6 matplotlib
 ```
 
-then install all the dependencies
+Activate the virtual env
+
+(Mac and Linux)
+```
+source activate banana-project
+```
+
+(Windows)
+```
+activate banana-project
+```
+
+Now install all the dependencies.
 
 ```
 pip install -r requirements.txt
 ```
 
 ## Run the Code
-To run the code in this repository download/clone the repository and run the main.py file.
+To run the code in this repository run the main.py file.
