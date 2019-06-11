@@ -7,12 +7,23 @@ The action space of the environment has four actions (corresponding to going for
 ## Dependencies
 This project is implemented using Python 3.6, PyTorch, NumPy and the UnityEnvironment package. For the plotting part of the project Matplotlib is used.
 ### Installation
+Download the repository with
+
+```
+git clone https://github.com/lbarazza/Banana-Collector
+```
+
+then
 
 To install the environment, choose the version corresponding to your operating system:
 
+[Linux](https://s3-us-west-1.amazonaws.com/udacity-drlnd/P1/Banana/Banana_Linux.zip)
 [Mac OSX](https://s3-us-west-1.amazonaws.com/udacity-drlnd/P1/Banana/Banana.app.zip)
+[Windows (32-bit)](https://s3-us-west-1.amazonaws.com/udacity-drlnd/P1/Banana/Banana_Windows_x86.zip)
+[Windows (64-bit)](https://s3-us-west-1.amazonaws.com/udacity-drlnd/P1/Banana/Banana_Windows_x86_64.zip)
 
 and then download all of the other requirements,
+
 ```
 pip install -r requirements.txt
 ```
