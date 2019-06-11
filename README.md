@@ -6,6 +6,18 @@ The action space of the environment has four actions (corresponding to going for
 
 ## Dependencies
 This project is implemented using Python 3.6, PyTorch, NumPy and the UnityEnvironment package. For the plotting part of the project Matplotlib is used.
+### Installation
+
+To install all of the dependencies, first clone the Unity ML agents repository,
+'''
+git clone https://github.com/Unity-Technologies/ml-agents.git
+git -C ml-agents checkout 0.4.0b
+pip install ml-agents/python/.
+'''
+and then download all of the other requirements,
+'''
+pip install -r requirements.txt
+'''
 
 ## Run the Code
 To run the code in this repository download/clone the repository and run the main.py file.
