@@ -28,7 +28,7 @@ An informal search over the hyperparaters has been conducted with the following 
 
 ## Results
 With the previously proposed hyperparameters I managed to solve the environment in a best of 1467 episodes.
-![](https://github.com/lbarazza/Banana-Collector/images/DDQN_e100k_batchnorm.png "DDQN_e100k_batchnorm")
+![alt text](https://github.com/lbarazza/Banana-Collector/images/DDQN_e100k_batchnorm.png "DDQN_e100k_batchnorm")
 
 
 ## Further Improvements
