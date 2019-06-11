@@ -29,6 +29,7 @@ An informal search over the hyperparaters has been conducted with the following 
 ## Results
 Using Double DQN with the previously proposed hyperparameters I managed to solve the environment in a best of 1467 episodes.
 ![alt text](https://raw.githubusercontent.com/lbarazza/Banana-Collector/master/images/DDQN_e100k_batchnorm.png "DDQN_e100k_batchnorm")
+(the average reward is in dark blue, while the actual single rewards are plotted in light blue)
 
 ## Further Improvements
 To further improve the algorithm some modifications can be made such as prioritized experience replay with importance sampling and a dueling network architecture. Other improvements could be Noisy DQN,  Distributional DQN and multi-step bootstrap targets (components of the Rainbow algorithm).
