@@ -31,7 +31,7 @@ cd Banana-Collector
 conda create --name banana-project python=3.6 matplotlib
 ```
 
-Activate the virtual env
+Activate the virtual environment:
 
 (Mac and Linux)
 ```
@@ -43,7 +43,7 @@ source activate banana-project
 activate banana-project
 ```
 
-Now install all the dependencies.
+Now install all the dependencies:
 
 ```
 pip install -r requirements.txt
