@@ -7,7 +7,8 @@ The action space of the environment has four actions (corresponding to going for
 
 ## Dependencies
 This project is implemented using Python 3.6, PyTorch, NumPy and the UnityEnvironment package. For the plotting part of the project Matplotlib is used.
-### Installation
+
+## Installation
 Download the repository with
 
 ```
@@ -51,4 +52,14 @@ pip install -r requirements.txt
 ```
 
 ## Run the Code
-To run the code in this repository run the main.py file.
+To create a new agent and make it learn from scratch run (or resume training):
+
+```
+python main.py
+```
+
+To visualize an already existing agent loaded from a checkpoint, change the path to the desired checkpoint in the file and run:
+
+```
+python visualize_agents.py
+```
