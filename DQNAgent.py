@@ -1,7 +1,6 @@
 from collections import deque
 import random
 import numpy as np
-#from scipy.ndimage.interpolation import shift
 import torch
 import torch.nn.functional as F
 from models.QNet import QNet
@@ -72,8 +71,10 @@ class Agent:
 
         #update replay_buffer with new experiences
         self.replay_buffer.append((state, action, reward, new_state, done))
-        #update td_errors with new td_error
+
+        ### importance sampling
         '''
+        # update td_errors with new td_error
         state = Agent.preprocess(state)
         action = Agent.preprocess([action]).long()
         reward = Agent.preprocess([reward])
@@ -88,8 +89,9 @@ class Agent:
             self.td_errors[-1] = td_error
         else:
             self.td_errors[buf_len] = td_error
-        #https://www.freecodecamp.org/news/improvements-in-deep-q-learning-dueling-double-dqn-prioritized-experience-replay-and-fixed-58b130cc5682/
         '''
+        ###
+
         #do experience replay if there are enough experiences
         if len(self.replay_buffer) >= self.replay_start_size:
             #print("Do experience replay")
@@ -97,57 +99,48 @@ class Agent:
 
         #check whether to update target_qnet
         if self.steps % self.target_qnet_update_rate == 0:
-            #update target_qnet parameters with qnet parameters
-            '''
-            for target_qnet_param, qnet_param in zip(self.target_qnet.parameters(), self.qnet.parameters()):
-                target_qnet_param.data.copy_(qnet_param.data)
-            '''
-            ## --> introduce soft updating <-- ##
+            # hard update local network
+            #for target_qnet_param, qnet_param in zip(self.target_qnet.parameters(), self.qnet.parameters()):
+            #    target_qnet_param.data.copy_(qnet_param.data)
+
+            # soft update network
             for target_qnet_param, qnet_param in zip(self.target_qnet.parameters(), self.qnet.parameters()):
                 target_qnet_param.data.copy_((1-self.tau)*target_qnet_param.data + self.tau*qnet_param.data)
 
         #increase steps by 1 and decrease epsilon
         self.steps += 1
         self.epsilon = max(self.epsilon_end, self.epsilon-self.epsilon_decay_rate)
-        # --> test exponential epsilon decay <-- #
-        #self.epsilon = max(self.epsilon_end, self.epsilon*self.epsilon_decay_rate)
-
 
     def probs(self, z):
-        #m = np.max(z)
-        #z = z**self.a
-        #for i in range(len(z)):
-        #    z[i] = z[i]
         z = (z+self.e)**self.alpha
-        return z/np.sum(z)#**self)#*self.a))
-
+        return z/np.sum(z)
 
     # do one step of experience replay
     def experience_replay(self):
+
         experiences_batch = random.sample(list(self.replay_buffer), self.BATCH_SIZE)
 
-        #p = self.probs(self.td_errors[:len(self.replay_buffer)])
-
-        # ---> experiences_batch_indexes = np.random.choice(len(self.replay_buffer), p=p, size=self.BATCH_SIZE) #p=p
-
-        # use 'fancy' indexing, that is indexing of lists by using lists
-        #experiences_batch = np.array(self.replay_buffer)[experiences_batch_indexes]
-
+        ### importance sampling
         '''
+        p = self.probs(self.td_errors[:len(self.replay_buffer)])
+        experiences_batch_indexes = np.random.choice(len(self.replay_buffer), p=p, size=self.BATCH_SIZE)
+
         # or to not continously convert entire replay buffer into np.array... (does it run faster?)
         experiences_batch = []
         for index in experiences_batch_indexes:
             experiences_batch.append(self.replay_buffer[index])
         '''
+        ###
 
         states, actions, rewards, new_states, dones = Agent.preprocess_experiences(experiences_batch)
         self.learn(states, actions, rewards, new_states, dones)
 
-
+        ### importance sampling
         '''
         new_td_errors = self.compute_td_errors(states, actions, rewards, new_states, dones)
         self.td_errors[experiences_batch_indexes] = new_td_errors.reshape(1, -1).squeeze()
         '''
+        ###
 
     # turn state into a tensor, add batch dimension to feed it into the model and cast it to a
     # FloatTensor as that is the default type for weights and biases in the nn Module (better than
@@ -182,8 +175,6 @@ class Agent:
         y = torch.gather(self.qnet(states), dim=1, index=actions)
         loss = F.mse_loss(y, td_targets)
 
-        ## ---> use huber loss <---- ##
-
         loss.backward()
         self.optimizer.step()
 
@@ -195,7 +186,7 @@ class Agent:
                     'qnet_state_dict': self.qnet.state_dict(),
                     'target_qnet_state_dict': self.target_qnet.state_dict(),
                     'optimizer_state_dict': self.optimizer.state_dict(),
-        }, checkpoint_path) # replay buffer becomes too big to store
+        }, checkpoint_path) # replay buffer becomes too big to store in tar file
 
 
     # load a checkpoint of the agent
