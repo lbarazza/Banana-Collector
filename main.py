@@ -23,12 +23,12 @@ agent = Agent(nS=nS,
               gamma=0.99,
               epsilon_start=1.0,
               epsilon_end=0.1,
-              # making epsilon decay in 4000000 frames will make epsilon get to 0.1 in around 800 episodes
+              # making epsilon decay in 1000000 frames will make epsilon get to 0.1 in around 200 episodes
               epsilon_decay_frames=100000,
               epsilon_decay_rate=0.99,
-              target_qnet_update_rate=5,#1000,#4
+              target_qnet_update_rate=5,
               tau=0.001,
-              replay_buffer_length=500000,#50000,
+              replay_buffer_length=500000,
               batch_size=256,
               replay_start_size=1000,
               alpha=0,
@@ -38,13 +38,14 @@ agent = Agent(nS=nS,
 start_epoch = 0
 MAX_EPOCHS = 3000
 
-checkpoint_path = "weights/NatureQNet22.tar"
+checkpoint_path = "checkpoints/agent1.tar" # path to the checkopint file
 
 # load checkpoint if available
 checkpoint_file = Path(checkpoint_path)
 if checkpoint_file.is_file():
     start_epoch = agent.load_checkpoint(checkpoint_path, mode='train')
 
+# setup plot
 plt.xlabel("n. Episodes")
 plt.ylabel("Score")
 
@@ -55,21 +56,26 @@ solved = False
 while not solved or (epoch == MAX_EPOCHS):
     epoch+=1
 
-    env_info = env.reset(train_mode=True)[brain_name] # train_mode=False makes the env run at 'normal speed'
+    # reset environment
+    env_info = env.reset(train_mode=True)[brain_name] # train_mode=True makes the env run faster to train faster
     state = env_info.vector_observations[0]
 
     ret = 0
     while True:
+        # choose action
         action = agent.choose_action(state)
+        # act and observe results
         env_info = env.step(action)[brain_name]
         reward = env_info.rewards[0]
         ret += reward
         new_state = env_info.vector_observations[0]
         done = env_info.local_done[0]
+        # make the agent process the experiences
         agent.step(state, action, reward, new_state, done)
         state = new_state
         if done:
             rets.append(ret)
+            # calculate mean
             if len(rets) > 100:
                 avg_ret = np.mean(rets[-100:])
                 avg_rets.append(avg_ret)
@@ -81,11 +87,12 @@ while not solved or (epoch == MAX_EPOCHS):
             print("Epoch n. {:5d}\tTotal Reward: {:2.0f}\tAverage Ret.: {:6.2f}\tEpsilon: {:5.2f}\tn. steps: {:9d}".format(epoch, ret, avg_ret, agent.epsilon, agent.steps))
             break
 
+    # save a checkpoint and update plot every 50 episodes or when done
     if (epoch%50==0) or solved:
         # save checkpoint
         agent.save_checkpoint(epoch, checkpoint_path)
         # plot agent's progress over time
-        plt.plot(range(1, epoch-start_epoch+1), rets, color='dodgerblue')#cyan
+        plt.plot(range(1, epoch-start_epoch+1), rets, color='dodgerblue')
         plt.plot(range(101, epoch-start_epoch+1), avg_rets, color='blue')
         plt.axhline(y=13, color='red')
         plt.pause(0.01)
