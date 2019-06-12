@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from models.QNet import QNet
 
 class Agent:
-    def __init__(self, nS, nA, learning_rate, gamma, epsilon_start, epsilon_end, epsilon_decay_frames, epsilon_decay_rate, target_qnet_update_rate, tau, replay_buffer_length, batch_size, replay_start_size, alpha, e):
+    def __init__(self, nS, nA, learning_rate, gamma, epsilon_start, epsilon_end, epsilon_decay_frames, target_qnet_update_rate, tau, replay_buffer_length, batch_size, replay_start_size, alpha=0, e=0):
 
         # initialize env info
         self.nS = nS
@@ -18,7 +18,6 @@ class Agent:
         self.epsilon = epsilon_start
         self.epsilon_end = epsilon_end
         self.epsilon_decay_rate = (epsilon_start - epsilon_end)/epsilon_decay_frames
-        #self.epsilon_decay_rate = epsilon_decay_rate
         self.target_qnet_update_rate = target_qnet_update_rate
         self.tau = tau
         self.REPLAY_BUFFER_LENGTH = replay_buffer_length
@@ -81,7 +80,6 @@ class Agent:
         new_state = Agent.preprocess(new_state)
         done = Agent.preprocess([done])
         td_error = self.compute_td_errors(state, action, reward, new_state, done).item()
-        #self.td_errors.append(td_error)
 
         buf_len = len(self.replay_buffer)
         if buf_len >= self.REPLAY_BUFFER_LENGTH:
