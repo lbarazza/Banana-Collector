@@ -32,7 +32,7 @@ Using Double DQN with the previously proposed hyperparameters I managed to solve
 (the average reward is in dark blue, while the actual single rewards are plotted in light blue)
 
 ## Further Improvements
-To further improve the algorithm some modifications can be made such as prioritized experience replay with importance sampling and a dueling network architecture. Other improvements could be Noisy DQN,  Distributional DQN and multi-step bootstrap targets (components of the Rainbow algorithm).
+To further improve the algorithm some modifications can be made such as prioritized experience replay with importance sampling, a dueling network architecture and the usage of Huber Loss instead of Mean Squared Error. Other improvements could be Noisy DQN,  Distributional DQN and multi-step bootstrap targets (components of the Rainbow algorithm).
 
 
 
