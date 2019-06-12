@@ -58,7 +58,7 @@ To create a new agent and make it learn from scratch run (or resume training):
 python main.py
 ```
 
-To visualize an already existing agent loaded from a checkpoint, change the path to the desired checkpoint in the file and run:
+To visualize an already existing agent loaded from a checkpoint, change the path to the desired checkpoint in the file and run (to visualize a pre-trained agent use checkpoint path "checkpoints/DDQN_e100k_batchnorm.tar"):
 
 ```
 python visualize_agents.py
