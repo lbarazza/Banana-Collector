@@ -25,15 +25,11 @@ agent = Agent(nS=nS,
               epsilon_end=0.1,
               # making epsilon decay in 1000000 frames will make epsilon get to 0.1 in around 200 episodes
               epsilon_decay_frames=100000,
-              epsilon_decay_rate=0.99,
               target_qnet_update_rate=5,
               tau=0.001,
               replay_buffer_length=500000,
               batch_size=256,
-              replay_start_size=1000,
-              alpha=0,
-              e=0)
-
+              replay_start_size=1000)
 
 start_epoch = 0
 MAX_EPOCHS = 3000
