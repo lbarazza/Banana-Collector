@@ -24,7 +24,8 @@ To install the environment, download the version corresponding to your operating
 
 [Windows (64-bit)](https://s3-us-west-1.amazonaws.com/udacity-drlnd/P1/Banana/Banana_Windows_x86_64.zip)
 
-Place the unzipped file in the root of the project folder and then move it into the project directory and create a virtual environment to contain all of the dependencies.
+Unzip the downloaded file and place it in the root folder of the project.
+Now move into the project folder and create a virtual environement where we can install all of the dependencies
 
 ```
 cd Banana-Collector
