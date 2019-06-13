@@ -27,7 +27,7 @@ An informal search over the hyperparaters has been conducted with the following 
 * epsilon is reduced linearly from epsilon_start to epsilon_end in epsilon_decay_frames amount of frames
 
 ## Results
-Using Double DQN with the previously proposed hyperparameters I managed to solve the environment in a best of 1467 episodes.
+Using Double DQN with the previously proposed hyperparameters I managed to solve the environment in a best of 1467 episodes (with seed 42).
 ![alt text](https://raw.githubusercontent.com/lbarazza/Banana-Collector/master/images/DDQN_e100k_batchnorm.png "DDQN_e100k_batchnorm")
 (the average reward is in dark blue, while the actual single rewards are plotted in light blue)
 
