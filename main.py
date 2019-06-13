@@ -7,7 +7,7 @@ from models.QNet import QNet
 from DQNAgent import Agent
 
 # create environment
-env = UnityEnvironment(file_name="Banana.app", seed=42) #seed = n
+env = UnityEnvironment(file_name="Banana.app") #seed = n
 # create brain
 brain_name = env.brain_names[0]
 brain = env.brains[brain_name]
