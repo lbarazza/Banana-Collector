@@ -32,7 +32,7 @@ class Agent:
 
         # initialize Deep Q Network and target network
         self.qnet = QNet(self.nS, self.nA)
-        self.target_qnet = self.qnet
+        self.target_qnet = QNet(self.nS, self.nA)
         self.optimizer = torch.optim.Adam(self.qnet.parameters(), lr=learning_rate)
 
         # initialize replay buffer for experiences replay
